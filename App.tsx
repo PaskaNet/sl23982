@@ -7,6 +7,7 @@ import { SuccessModal } from './components/SuccessModal';
 import { IntroAnimation } from './components/IntroAnimation';
 import { MarketIndexModal } from './components/MarketIndexModal';
 import { ShippingTracker } from './components/ShippingTracker';
+import { AdModal } from './components/AdModal';
 import { PRODUCTS } from './constants';
 import type { Product, CartItem } from './types';
 
@@ -18,12 +19,34 @@ const App: React.FC = () => {
   const [isMarketIndexOpen, setIsMarketIndexOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [adModal, setAdModal] = useState<{isOpen: boolean; product: Product | null}>({isOpen: false, product: null});
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const introTimer = setTimeout(() => {
       setShowIntro(false);
     }, 2000);
-    return () => clearTimeout(timer);
+
+    const adTimer = setTimeout(() => {
+      const saleProducts = PRODUCTS.filter(p => p.originalPrice);
+      const regularProducts = PRODUCTS.filter(p => !p.originalPrice);
+      
+      let productToShow: Product | undefined;
+      // 70% chance to show a sale ad if available
+      if (saleProducts.length > 0 && Math.random() < 0.7) {
+          productToShow = saleProducts[Math.floor(Math.random() * saleProducts.length)];
+      } else {
+          productToShow = regularProducts[Math.floor(Math.random() * regularProducts.length)];
+      }
+
+      if (productToShow) {
+          setAdModal({ isOpen: true, product: productToShow });
+      }
+    }, 10000); // Show ad after 10 seconds
+
+    return () => {
+      clearTimeout(introTimer);
+      clearTimeout(adTimer);
+    };
   }, []);
 
   const cartSummary = useMemo(() => {
@@ -120,6 +143,13 @@ const App: React.FC = () => {
       <ShippingTracker
         isOpen={isTrackingOpen}
         onClose={() => setIsTrackingOpen(false)}
+      />
+
+      <AdModal
+        isOpen={adModal.isOpen}
+        product={adModal.product}
+        onClose={() => setAdModal({isOpen: false, product: null})}
+        onAddToCart={handleAddToCart}
       />
     </div>
   );
